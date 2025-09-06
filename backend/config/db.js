@@ -11,27 +11,32 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT,
     dialect: 'postgres',
     logging: console.log,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false, // مهم مع Render
+      },
+    },
   }
 );
 
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
-    console.log('PostgreSQL connecté avec succès');
+    console.log('✅ PostgreSQL connecté avec succès');
     
     // Synchroniser la base de données après la connexion
     await syncDB();
   } catch (err) {
-    console.error('Erreur de connexion à PostgreSQL:', err.message);
+    console.error('❌ Erreur de connexion à PostgreSQL:', err.message);
     process.exit(1);
   }
 };
 
 const syncDB = async () => {
   try {
-    // Utiliser alter: true au lieu de force: true pour préserver les données existantes
-    await sequelize.sync({ alter: true });
-    console.log('Base de données et tables synchronisées');
+    await sequelize.sync({ alter: true }); // alter: true = ما يحذفش البيانات
+    console.log('✅ Base de données et tables synchronisées');
     
     const User = require('../models/User');
     
@@ -42,12 +47,12 @@ const syncDB = async () => {
         username: 'admin',
         password: await bcrypt.hash('amira', 10),
       });
-      console.log('Utilisateur admin créé avec succès');
+      console.log('👤 Utilisateur admin créé avec succès');
     } else {
-      console.log('Utilisateur admin existe déjà');
+      console.log('ℹ️ Utilisateur admin existe déjà');
     }
   } catch (err) {
-    console.error('Erreur de synchronisation:', err.message);
+    console.error('❌ Erreur de synchronisation:', err.message);
   }
 };
 
