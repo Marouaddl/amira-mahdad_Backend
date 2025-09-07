@@ -10,11 +10,11 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: 'postgres',
-    logging: console.log,
+    logging: false, // خليها false باش ما يعمرلكش logs
     dialectOptions: {
       ssl: {
         require: true,
-        rejectUnauthorized: false, // مهم مع Render
+        rejectUnauthorized: false, // Render يحتاجها
       },
     },
   }
@@ -24,7 +24,7 @@ const connectDB = async () => {
   try {
     await sequelize.authenticate();
     console.log('✅ PostgreSQL connecté avec succès');
-    
+
     // Synchroniser la base de données après la connexion
     await syncDB();
   } catch (err) {
@@ -35,11 +35,11 @@ const connectDB = async () => {
 
 const syncDB = async () => {
   try {
-    await sequelize.sync({ alter: true }); // alter: true = ما يحذفش البيانات
+    await sequelize.sync({ alter: true }); // alter: true = ما يمسحش البيانات
     console.log('✅ Base de données et tables synchronisées');
-    
+
     const User = require('../models/User');
-    
+
     // Vérifier si l'utilisateur admin existe déjà
     const existingUser = await User.findOne({ where: { username: 'admin' } });
     if (!existingUser) {
