@@ -23,7 +23,7 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-  origin: 'https://amira-mahdad-omega.vercel.app',
+  origin: 'https://amiramahdad.netlify.app/',
   credentials: true,
 }));
 app.use(express.json({ limit: '50mb' }));
