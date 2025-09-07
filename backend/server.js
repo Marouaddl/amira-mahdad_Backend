@@ -23,7 +23,7 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: 'https://amira-mahdad-omega.vercel.app',
   credentials: true,
 }));
 app.use(express.json({ limit: '50mb' }));
