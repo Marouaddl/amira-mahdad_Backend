@@ -35,17 +35,15 @@ exports.getProjects = async (req, res) => {
 exports.createProject = async (req, res) => {
   const { title, year, location, category, description } = req.body;
 
-  const image = req.files['image']
-    ? `/uploads/${sanitizeFileName(req.files['image'][0].filename)}`
-    : '';
-
-  const video = req.files['video']
-    ? `/uploads/${sanitizeFileName(req.files['video'][0].filename)}`
-    : '';
-
-  const additionalImages = req.files['additionalImages']
-    ? req.files['additionalImages'].map(file => `/uploads/${sanitizeFileName(file.filename)}`)
-    : [];
+const image = req.files && req.files['image'] && req.files['image'][0]
+  ? `/uploads/${sanitizeFileName(req.files['image'][0].filename)}`
+  : '';
+const video = req.files && req.files['video'] && req.files['video'][0]
+  ? `/uploads/${sanitizeFileName(req.files['video'][0].filename)}`
+  : '';
+const additionalImages = req.files && req.files['additionalImages']
+  ? req.files['additionalImages'].map(file => `/uploads/${sanitizeFileName(file.filename)}`)
+  : [];
 
   try {
     const project = await Project.create({
