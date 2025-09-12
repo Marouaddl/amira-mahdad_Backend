@@ -23,7 +23,7 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-  origin: 'https://amiramahdad.netlify.app',
+  origin: 'https://amira-mahdad.netlify.app',
   credentials: true,
 }));
 app.use(express.json({ limit: '50mb' }));
