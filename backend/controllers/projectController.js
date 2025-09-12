@@ -8,22 +8,25 @@ const sanitizeFileName = (filename) => {
     .replace(/[^a-zA-Z0-9._-]/g, "_"); // remplacer caractères spéciaux/espaces par "_"
 };
 
-// Fonction pour ajouter l'URL de base avec HTTPS forcé
+// Fonction pour ajouter l'URL de base
 const addBaseUrlToVideo = (req, project) => {
-  const baseUrl = `https://${req.get('host')}`; // Force HTTPS
+  // Use HTTPS for production, or the request protocol for development
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
+  const baseUrl = `${protocol}://${req.get('host')}`;
+  
   const p = project.toJSON ? project.toJSON() : project;
 
-  // Add /uploads/ only if not an absolute URL
+  // Only modify the video field if it exists and is not already an absolute URL
   if (p.video && !p.video.startsWith('http://') && !p.video.startsWith('https://')) {
-    p.video = `${baseUrl}/uploads/${p.video}`;
+    p.video = `${baseUrl}${p.video}`; // Remove extra /uploads/ here
   }
   if (p.image && !p.image.startsWith('http://') && !p.image.startsWith('https://')) {
-    p.image = `${baseUrl}/uploads/${p.image}`;
+    p.image = `${baseUrl}${p.image}`; // Remove extra /uploads/ here
   }
   if (p.additionalImages && Array.isArray(p.additionalImages)) {
     p.additionalImages = p.additionalImages.map(img => 
       img && !img.startsWith('http://') && !img.startsWith('https://') 
-        ? `${baseUrl}/uploads/${img}` 
+        ? `${baseUrl}${img}` // Remove extra /uploads/ here
         : img
     );
   }
@@ -47,14 +50,18 @@ exports.createProject = async (req, res) => {
   console.log('Request files:', req.files);
 
   const { title, year, location, category, description } = req.body;
+  
+  // Store the path with /uploads/ prefix
   const image = req.files && req.files['image'] && req.files['image'][0]
-    ? sanitizeFileName(req.files['image'][0].filename)
+    ? `/uploads/${sanitizeFileName(req.files['image'][0].filename)}`
     : '';
+  
   const video = req.files && req.files['video'] && req.files['video'][0]
-    ? sanitizeFileName(req.files['video'][0].filename)
+    ? `/uploads/${sanitizeFileName(req.files['video'][0].filename)}`
     : '';
+  
   const additionalImages = req.files && req.files['additionalImages']
-    ? req.files['additionalImages'].map(file => sanitizeFileName(file.filename))
+    ? req.files['additionalImages'].map(file => `/uploads/${sanitizeFileName(file.filename)}`)
     : [];
 
   try {
@@ -87,14 +94,17 @@ exports.updateProject = async (req, res) => {
   const { id } = req.params;
   const { title, year, location, category, description } = req.body;
 
+  // Store the path with /uploads/ prefix
   const image = req.files && req.files['image'] && req.files['image'][0]
-    ? sanitizeFileName(req.files['image'][0].filename)
+    ? `/uploads/${sanitizeFileName(req.files['image'][0].filename)}`
     : undefined;
+  
   const video = req.files && req.files['video'] && req.files['video'][0]
-    ? sanitizeFileName(req.files['video'][0].filename)
+    ? `/uploads/${sanitizeFileName(req.files['video'][0].filename)}`
     : undefined;
+  
   const additionalImages = req.files && req.files['additionalImages']
-    ? req.files['additionalImages'].map(file => sanitizeFileName(file.filename))
+    ? req.files['additionalImages'].map(file => `/uploads/${sanitizeFileName(file.filename)}`)
     : undefined;
 
   try {
