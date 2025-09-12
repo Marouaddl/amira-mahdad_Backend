@@ -8,17 +8,17 @@ const sanitizeFileName = (filename) => {
     .replace(/[^a-zA-Z0-9._-]/g, "_"); // remplacer caractères spéciaux/espaces par "_"
 };
 
-// Fonction pour ajouter l'URL de base au champ video
+// Fonction pour ajouter l'URL de base avec HTTPS forcé
 const addBaseUrlToVideo = (req, project) => {
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const baseUrl = `https://${req.get('host')}`; // Force HTTPS
   const p = project.toJSON ? project.toJSON() : project;
 
-  // Only modify the video field if it exists and is not already an absolute URL
+  // Add /uploads/ only if not an absolute URL
   if (p.video && !p.video.startsWith('http://') && !p.video.startsWith('https://')) {
-    p.video = `${baseUrl}/uploads/${p.video}`; // Add /uploads/ here
+    p.video = `${baseUrl}/uploads/${p.video}`;
   }
   if (p.image && !p.image.startsWith('http://') && !p.image.startsWith('https://')) {
-    p.image = `${baseUrl}/uploads/${p.image}`; // Add /uploads/ for image
+    p.image = `${baseUrl}/uploads/${p.image}`;
   }
   if (p.additionalImages && Array.isArray(p.additionalImages)) {
     p.additionalImages = p.additionalImages.map(img => 
