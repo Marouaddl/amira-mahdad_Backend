@@ -1,21 +1,33 @@
 const Project = require('../models/project');
 
+// Fonction pour nettoyer les noms de fichiers
+const sanitizeFileName = (filename) => {
+  return filename
+    .normalize("NFD")                  // enlever les accents
+    .replace(/[\u0300-\u036f]/g, "")   // supprimer les diacritiques
+    .replace(/[^a-zA-Z0-9._-]/g, "_"); // remplacer caractères spéciaux/espaces par "_"
+};
+
 // Fonction pour ajouter l'URL de base
-const addBaseUrlToMedia = (req, project) => {
+const addBaseUrlToVideo = (req, project) => {
+  // Use HTTPS for production, or the request protocol for development
   const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
   const baseUrl = `${protocol}://${req.get('host')}`;
-
+  
   const p = project.toJSON ? project.toJSON() : project;
 
-  if (p.image && !p.image.startsWith('http')) {
-    p.image = `${baseUrl}/uploads/${p.image}`;
+  // Only modify the video field if it exists and is not already an absolute URL
+  if (p.video && !p.video.startsWith('http://') && !p.video.startsWith('https://')) {
+    p.video = `${baseUrl}${p.video}`; // Remove extra /uploads/ here
   }
-  if (p.video && !p.video.startsWith('http')) {
-    p.video = `${baseUrl}/uploads/${p.video}`;
+  if (p.image && !p.image.startsWith('http://') && !p.image.startsWith('https://')) {
+    p.image = `${baseUrl}${p.image}`; // Remove extra /uploads/ here
   }
   if (p.additionalImages && Array.isArray(p.additionalImages)) {
-    p.additionalImages = p.additionalImages.map(img =>
-      img && !img.startsWith('http') ? `${baseUrl}/uploads/${img}` : img
+    p.additionalImages = p.additionalImages.map(img => 
+      img && !img.startsWith('http://') && !img.startsWith('https://') 
+        ? `${baseUrl}${img}` // Remove extra /uploads/ here
+        : img
     );
   }
 
@@ -25,7 +37,7 @@ const addBaseUrlToMedia = (req, project) => {
 exports.getProjects = async (req, res) => {
   try {
     let projects = await Project.findAll();
-    projects = projects.map(project => addBaseUrlToMedia(req, project));
+    projects = projects.map(project => addBaseUrlToVideo(req, project));
     res.json(projects);
   } catch (err) {
     console.error('Error in getProjects:', err);
@@ -38,17 +50,24 @@ exports.createProject = async (req, res) => {
   console.log('Request files:', req.files);
 
   const { title, year, location, category, description } = req.body;
-
-  // Stocker uniquement le filename
-  const image = req.files?.image?.[0]?.filename || '';
-  const video = req.files?.video?.[0]?.filename || '';
-  const additionalImages = req.files?.additionalImages?.map(file => file.filename) || [];
+  
+  // Store the path with /uploads/ prefix
+  const image = req.files && req.files['image'] && req.files['image'][0]
+    ? `/uploads/${sanitizeFileName(req.files['image'][0].filename)}`
+    : '';
+  
+  const video = req.files && req.files['video'] && req.files['video'][0]
+    ? `/uploads/${sanitizeFileName(req.files['video'][0].filename)}`
+    : '';
+  
+  const additionalImages = req.files && req.files['additionalImages']
+    ? req.files['additionalImages'].map(file => `/uploads/${sanitizeFileName(file.filename)}`)
+    : [];
 
   try {
     if (!title || !year || !location || !category) {
       return res.status(400).json({ error: 'Tous les champs obligatoires sont requis' });
     }
-
     const project = await Project.create({
       title,
       year,
@@ -59,8 +78,7 @@ exports.createProject = async (req, res) => {
       video,
       additionalImages,
     });
-
-    res.status(201).json(addBaseUrlToMedia(req, project));
+    res.status(201).json(addBaseUrlToVideo(req, project));
   } catch (err) {
     console.error('Error in createProject:', {
       message: err.message,
@@ -76,10 +94,18 @@ exports.updateProject = async (req, res) => {
   const { id } = req.params;
   const { title, year, location, category, description } = req.body;
 
-  // Stocker uniquement le filename
-  const image = req.files?.image?.[0]?.filename;
-  const video = req.files?.video?.[0]?.filename;
-  const additionalImages = req.files?.additionalImages?.map(file => file.filename);
+  // Store the path with /uploads/ prefix
+  const image = req.files && req.files['image'] && req.files['image'][0]
+    ? `/uploads/${sanitizeFileName(req.files['image'][0].filename)}`
+    : undefined;
+  
+  const video = req.files && req.files['video'] && req.files['video'][0]
+    ? `/uploads/${sanitizeFileName(req.files['video'][0].filename)}`
+    : undefined;
+  
+  const additionalImages = req.files && req.files['additionalImages']
+    ? req.files['additionalImages'].map(file => `/uploads/${sanitizeFileName(file.filename)}`)
+    : undefined;
 
   try {
     const project = await Project.findByPk(id);
@@ -96,7 +122,7 @@ exports.updateProject = async (req, res) => {
       additionalImages: additionalImages !== undefined ? additionalImages : project.additionalImages,
     });
 
-    res.json(addBaseUrlToMedia(req, project));
+    res.json(addBaseUrlToVideo(req, project));
   } catch (err) {
     console.error('Error in updateProject:', err);
     res.status(500).json({ error: err.message });
