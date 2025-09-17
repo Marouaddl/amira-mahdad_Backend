@@ -1,11 +1,13 @@
+// backend/routes/profile.js
 const express = require('express');
 const { protect } = require('../middleware/auth');
 const { getProfile, updateProfile } = require('../controllers/profileController');
 const router = express.Router();
 
-router.use(protect);
+// Public route: No authentication required
 router.get('/', getProfile);
-router.put('/', updateProfile);
 
+// Protected route: Require JWT token
+router.put('/', protect, updateProfile);
 
 module.exports = router;
